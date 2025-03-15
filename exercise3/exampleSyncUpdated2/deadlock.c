@@ -45,6 +45,7 @@ void *grabRsrcs(void *threadp)
      rsrcACnt++;
      if(!noWait) sleep(1);
      printf("THREAD 1 got A, trying for B\n");
+<<<<<<< HEAD
      while(pthread_mutex_trylock(&rsrcB) != 0)
      {
 				printf("Thread 1 cannot obtain lock on B, now releasing A and waiting...\n");	 
@@ -54,6 +55,8 @@ void *grabRsrcs(void *threadp)
      }
 		 pthread_mutex_lock(&rsrcA);
 		 rsrcACnt++;
+=======
+>>>>>>> 201f59ce8dd7970f8f435926172932003dfcbf07
      pthread_mutex_lock(&rsrcB);
      rsrcBCnt++;
      printf("THREAD 1 got A and B\n");
@@ -68,6 +71,7 @@ void *grabRsrcs(void *threadp)
      rsrcBCnt++;
      if(!noWait) sleep(1);
      printf("THREAD 2 got B, trying for A\n");
+<<<<<<< HEAD
 		 while(pthread_mutex_trylock(&rsrcA) != 0)
      {
 				printf("Thread 2 cannot obtain lock on A, now releasing B and waiting...\n");
@@ -78,6 +82,9 @@ void *grabRsrcs(void *threadp)
 		 pthread_mutex_lock(&rsrcB);
 		 rsrcBCnt++;
 		 pthread_mutex_lock(&rsrcA);
+=======
+     pthread_mutex_lock(&rsrcA);
+>>>>>>> 201f59ce8dd7970f8f435926172932003dfcbf07
      rsrcACnt++;
      printf("THREAD 2 got B and A\n");
      pthread_mutex_unlock(&rsrcA);
