@@ -92,7 +92,9 @@ int delta_t(struct timespec *stop, struct timespec *start, struct timespec *delt
 static struct timespec rtclk_dt = {0, 0};
 static struct timespec rtclk_start_time = {0, 0};
 static struct timespec rtclk_stop_time = {0, 0};
+static struct timespec rtclk_stop_time2 = {0, 0};
 static struct timespec delay_error = {0, 0};
+static struct timespec gettime_dt = {0, 0};
 
 void *delay_test(void *threadID)
 {
@@ -134,10 +136,11 @@ void *delay_test(void *threadID)
   while (((remaining_time.tv_sec > 0) || (remaining_time.tv_nsec > 0)) && (sleep_count < max_sleep_calls));
 
   clock_gettime(CLOCK_REALTIME, &rtclk_stop_time);
+  clock_gettime(CLOCK_REALTIME, &rtclk_stop_time2);
 
   delta_t(&rtclk_stop_time, &rtclk_start_time, &rtclk_dt);
   delta_t(&rtclk_dt, &sleep_requested, &delay_error);
-
+  delta_t(&rtclk_stop_time2, &rtclk_stop_time, &gettime_dt);
   end_delay_test();
 
 }
@@ -161,12 +164,13 @@ void end_delay_test(void)
   printf("Sleep loop count = %ld\n", sleep_count);
   printf("RT clock delay error = %ld, nanoseconds = %ld\n", 
          delay_error.tv_sec, delay_error.tv_nsec);
+  printf("gettime() call time delta = %ld, nanoseconds = %ld\n", gettime_dt.tv_sec, gettime_dt.tv_nsec);
  
   exit(0);
 
 }
 
-//#define RUN_RT_THREAD
+#define RUN_RT_THREAD
 
 void main(void)
 {
@@ -215,7 +219,6 @@ void main(void)
 #else
    delay_test((void *)0);
 #endif
-
    printf("TEST COMPLETE\n");
 }
 

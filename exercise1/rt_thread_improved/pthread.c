@@ -18,6 +18,8 @@
 #include <stdio.h>
 #include <sched.h>
 #include <time.h>
+#include <unistd.h>
+#include <sys/sysinfo.h>
 
 #define NUM_THREADS (4)
 #define NUM_CPUS (1)

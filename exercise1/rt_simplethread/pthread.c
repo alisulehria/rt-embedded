@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <sched.h>
 #include <time.h>
+#include <unistd.h>
 
 #define NUM_THREADS (1)
 #define NUM_CPUS (1)

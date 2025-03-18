@@ -4,7 +4,7 @@ CC=gcc
 
 CDEFS=
 CFLAGS= -O0 -g $(INCLUDE_DIRS) $(CDEFS)
-LIBS= 
+LIBS= -lpthread -lrt
 
 HFILES= 
 CFILES= pthread.c
