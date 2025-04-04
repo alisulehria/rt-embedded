@@ -34,6 +34,14 @@ struct RTStatistics
     std::atomic<long long> totalReleaseJitterNs{0};
     std::atomic<long long> releaseCount{0};
 
+    // execution jitter stats (delta b/w consecutive execution times)
+    std::atomic<long long> minExecJitterNs{std::numeric_limits<long long>::max()};
+    std::atomic<long long> maxExecJitterNs{0};
+    std::atomic<long long> totalExecJitterNs{0};
+    std::atomic<long long> execJitterCount{0};
+
+    long long previousExecNs{0};
+
     // Deadline stats
     std::atomic<long long> deadlineMissCount{0};
 
@@ -51,6 +59,20 @@ struct RTStatistics
 
         totalExecNs += execNs;
         count++;
+
+        //exec jitter calc after first execution is over
+        if (count > 1) {
+            long long execJitter = (execNs > previousExecNs) ? (execNs - previousExecNs) : (previousExecNs - execNs);
+            auto prevMinJitter = minExecJitterNs.load();
+            while (execJitter < prevMinJitter && !minExecJitterNs.compare_exchange_weak(prevMinJitter, execJitter))
+                ;
+            auto prevMaxJitter = maxExecJitterNs.load();
+            while (execJitter > prevMaxJitter && !maxExecJitterNs.compare_exchange_weak(prevMaxJitter, execJitter))
+                ;
+            totalExecJitterNs += execJitter;
+            execJitterCount++;
+        }
+        previousExecNs = execNs;
     }
 
     void updateReleaseJitter(long long jitterNs)
@@ -81,6 +103,11 @@ struct RTStatistics
     {
         long long c = releaseCount.load();
         return c == 0 ? 0.0 : double(totalReleaseJitterNs.load()) / double(c);
+    }
+    double avgExecJitterNs() const
+    {
+        long long c = execJitterCount.load();
+        return c == 0 ? 0.0 : double(totalExecJitterNs.load()) / double(c);
     }
 };
 
@@ -165,5 +192,8 @@ private:
     // Utility: set the affinity & priority for the calling thread
     static void setCurrentThreadAffinity(int cpuCore);
     static void setCurrentThreadPriority(int priority);
+
+    //remember current position in sorted services list (vector?)
+    size_t nextServiceIndex{0};
 };
 

@@ -82,6 +82,11 @@ void Sequencer::addService(std::string name, std::function<void()> func, int pri
 
 void Sequencer::startServices(int masterIntervalMs)
 {
+    // sort services by period, low to high
+    std::sort(services.begin(), services.end(), [](const std::unique_ptr<Service>& a, const std::unique_ptr<Service>& b) {
+        return a->periodMs < b->periodMs;
+    });
+
     // Reset "nextRelease" for each service to "now"
     auto now = std::chrono::steady_clock::now();
     for (auto &svc : services)
@@ -127,9 +132,14 @@ void Sequencer::onAlarm()
 {
     // This is called each time SIGALRM fires
     auto now = std::chrono::steady_clock::now();
+    size_t count = services.size();
 
-    for (auto &svc : services)
+    for (size_t i=0; i < count; i++)  //auto &svc : services)
     {
+        // initialize next starting service idx and svc object
+        size_t idx = (nextServiceIndex + i) % count;
+        Service* svc = services[idx].get();
+
         // Check if time to release
         if (now >= svc->nextRelease)
         {
@@ -148,6 +158,11 @@ void Sequencer::onAlarm()
             svc->nextDeadline = svc->nextRelease
                                 + std::chrono::milliseconds(svc->periodMs);
         }
+        else {
+            // when we find a svc that's not due, we save it as the next starting pt.
+            nextServiceIndex = idx;
+            break;
+        }
     }
 }
 
@@ -161,6 +176,9 @@ void Sequencer::printStatistics()
                   << "   ExecTime:   min=" << st.minExecNs.load() / 1e6 << " ms, "
                   << "max=" << st.maxExecNs.load() / 1e6 << " ms, "
                   << "avg=" << st.avgExecNs() / 1e6 << " ms\n"
+                  << "   ExecJitter: min=" << st.minExecJitterNs.load() / 1e6 << " ms, "
+                  << "max=" << st.maxExecJitterNs.load() / 1e6 << " ms, "
+                  << "avg=" << st.avgExecJitterNs() / 1e6 << " ms\n"
                   << "   ReleaseJit: min=" << st.minReleaseJitterNs.load() / 1e6 << " ms, "
                   << "max=" << st.maxReleaseJitterNs.load() / 1e6 << " ms, "
                   << "avg=" << st.avgReleaseJitterNs() / 1e6 << " ms\n"
