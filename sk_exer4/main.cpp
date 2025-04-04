@@ -7,7 +7,7 @@ void fib10Work()
 {
     const unsigned N = 47;
     unsigned fib0=0, fib1=1, fib=0;
-    for (unsigned i=0; i<170000; i++)
+    for (unsigned i=0; i<12000; i++)
     {
         for (unsigned j=0; j<N; j++)
         {
@@ -22,7 +22,7 @@ void fib20Work()
 {
     const unsigned N = 47;
     unsigned fib0=0, fib1=1, fib=0;
-    for (unsigned i=0; i<340000; i++)
+    for (unsigned i=0; i<24000; i++)
     {
         for (unsigned j=0; j<N; j++)
         {
