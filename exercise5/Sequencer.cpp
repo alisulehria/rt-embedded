@@ -17,12 +17,12 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/mman.h>
+#include <chrono>
+#include <iostream>
 
 #define DEV_NAME "/dev/gpiochip0"
 #define DEV_MEM "/dev/gpiomem"
-#define GPIO_WRITE 17 // this is "offset"
-
-static int state = 0;
+#define GPIO_WRITE 16 // this is "offset"
 
 typedef enum
 {
@@ -58,7 +58,7 @@ static void gpio_write(const char *dev_name, int offset, uint8_t value){
     rq.lineoffsets[0] = offset;
     rq.flags = GPIOHANDLE_REQUEST_OUTPUT;
     rq.lines = 1;
-    //get line handle of 
+    // get line handle
     ret = ioctl(fd, GPIO_GET_LINEHANDLE_IOCTL, &rq);
     if(ret  == -1){
         printf("Cannot get line handle: %s \n", strerror(errno));
@@ -76,15 +76,13 @@ static void gpio_write(const char *dev_name, int offset, uint8_t value){
 
 static void mmap_gpio_write(const char *dev_mem, int offset, uint8_t value){
     //part 3d implementation (mmap call adapted in part from Dr. Lawlor's lecture at https://www.cs.uaf.edu/2016/fall/cs301/lecture/11_09_raspberry_pi.html)
-    // set offset for 
-    int index_offset = 10 - 3 * value;
     int fd;
     fd = open(dev_mem, O_RDWR);
     if (fd < 0){
         printf("Unable to open %s: %s\n", DEV_MEM, strerror(errno));
         return;
     }
-    unsigned int *gpio = (unsigned int *)mmap(0, 4096, PROT_READ+PROT_WRITE, MAP_SHARED, fd, 0);
+    unsigned int *gpio = (unsigned int *)mmap(0, 4096, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
     if (gpio == MAP_FAILED){
         printf("mmap failed: %s\n", strerror(errno));
         close(fd);
@@ -93,14 +91,28 @@ static void mmap_gpio_write(const char *dev_mem, int offset, uint8_t value){
     printf("mmap success: %s at address %d\n", dev_mem, gpio);
     close(fd);
     // write the value using either gpio[7] (hi) or gpio[10] (low)
-    gpio[index_offset] = 1 << offset;
+    if(value == 0){
+        gpio[10] = 1 << offset;
+    }
+    else if (value ==1){
+        gpio[7] = 1 << offset;
+    }
+    printf("just wrote %d to pin", value);
 
     munmap(gpio, 4096);
     return;
 }
 
 void service() {
+    static int state = 0;
+    int result;
 
+    static uint64_t min_time = std::numeric_limits<uint64_t>::max();
+    static uint64_t max_time = 0;
+    static uint64_t total_time = 0;
+    static size_t count = 0;
+
+    auto start = std::chrono::high_resolution_clock::now();
     //std::puts("this is service 2 implemented as a function\n");
     // system("sudo pinctrl get 17");
     // part 3a implementation:
@@ -108,18 +120,32 @@ void service() {
     if(state == 0)
     {
 		// system("sudo pinctrl set 17 dh"); //part a 
-        //gpio_write(DEV_NAME, GPIO_WRITE, 1); //part c
-        mmap_gpio_write(DEV_MEM, GPIO_WRITE, 1);
+        gpio_write(DEV_NAME, GPIO_WRITE, 1); //part c
+        //mmap_gpio_write(DEV_MEM, GPIO_WRITE, 1); // part d
 		state = 1;
 	}
 	else if(state == 1)
 	{
 		// system("sudo pinctrl set 17 dl"); // part a
-        //gpio_write(DEV_NAME, GPIO_WRITE, 0); // part c
-        mmap_gpio_write(DEV_MEM, GPIO_WRITE, 0);
+        gpio_write(DEV_NAME, GPIO_WRITE, 0); // part c
+        //mmap_gpio_write(DEV_MEM, GPIO_WRITE, 0); // part d
 		state = 0;
 	}
-    
+    auto end = std::chrono::high_resolution_clock::now();
+    uint64_t exec_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+
+    ++count;
+    total_time += exec_time;
+    if (exec_time < min_time) min_time = exec_time;
+    if (exec_time > max_time) max_time = exec_time;
+
+    // Periodic print
+    if (count % 10 == 0) {
+        std::cout << "--- Timing Stats (µs) after " << count << " runs ---\n";
+        std::cout << "Min: " << min_time << " | Max: " << max_time
+                  << " | Avg: " << (total_time / count)
+                  << " | Jitter: " << (max_time - min_time) << "\n";
+    }
 }
 
 int main() {
