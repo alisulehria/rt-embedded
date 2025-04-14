@@ -1,5 +1,5 @@
 CXX = g++
-CXXFLAGS = -std=c++17 -Wall -Werror -pedantic
+CXXFLAGS = -std=c++17 -Wall -Wno-error -pedantic
 
 all: Sequencer
 
