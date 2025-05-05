@@ -179,11 +179,11 @@
          _initializeService();
          
          while (_running) {
-             // Wait for release
-             if (_semaphore.try_acquire() == true) {
-                printf("failed to acquire semaphore.");
-             }
-             if (_running) {
+
+             _semaphore.acquire();
+
+             if (!_running) break;                 // in case stop() was called
+             else {
                  auto releaseTime = std::chrono::steady_clock::now();
                  
                  // Record release statistics
@@ -237,7 +237,6 @@
                      _stats.executionCount++;
                  }
              }
-             stop();
          }
      }
  };
