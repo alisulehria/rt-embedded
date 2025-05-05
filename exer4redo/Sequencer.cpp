@@ -58,12 +58,12 @@ void generateLoad(double targetMilliseconds) {
 // Service functions
 void service1() {
     // Generate load for approximately 30.04ms
-    generateLoad(20);
+    generateLoad(10);
 }
 
 void service2() {
     // Generate load for approximately 61.00ms
-    generateLoad(40);
+    generateLoad(20);
 }
 
 int main(int argc, char* argv[]) {
