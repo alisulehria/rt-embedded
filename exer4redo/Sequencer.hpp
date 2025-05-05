@@ -180,8 +180,9 @@
          
          while (_running) {
              // Wait for release
-             _semaphore.acquire();
-             
+             if (_semaphore.try_acquire() == true) {
+                printf("failed to acquire semaphore.");
+             }
              if (_running) {
                  auto releaseTime = std::chrono::steady_clock::now();
                  
@@ -236,6 +237,7 @@
                      _stats.executionCount++;
                  }
              }
+             stop();
          }
      }
  };
